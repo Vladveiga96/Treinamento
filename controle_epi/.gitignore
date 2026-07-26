@@ -1,0 +1,15 @@
+# Banco de dados local (gerado automaticamente, não deve ir pro repositório)
+*.db
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# Arquivos de IDE
+.vscode/
+.idea/
