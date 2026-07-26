@@ -53,7 +53,7 @@ O navegador abrirá automaticamente em `http://localhost:8501`.
 ## Possíveis evoluções (ideias para continuar o projeto)
 
 - Autenticação de usuários (login para RH/segurança do trabalho) - Feita
-- Exportação de relatórios em PDF ou Excel
+- Exportação de relatórios em PDF ou Excel - Feita
 - Envio de e-mail/WhatsApp automático quando um EPI estiver próximo do vencimento
 - Leitura de EPI por código de barras/QR Code (entrega mais rápida)
 - Deploy em nuvem (Streamlit Community Cloud, Render, etc.) para acesso remoto
