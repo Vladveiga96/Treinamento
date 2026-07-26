@@ -5,6 +5,8 @@ Usa SQLite (biblioteca padrão do Python, sem dependências externas).
 """
 
 import sqlite3
+import hashlib
+import secrets
 from datetime import date, timedelta
 from contextlib import contextmanager
 
@@ -52,8 +54,24 @@ def init_db():
                 FOREIGN KEY (funcionario_id) REFERENCES funcionarios (id),
                 FOREIGN KEY (epi_id) REFERENCES tipos_epi (id)
             );
+
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                salt TEXT NOT NULL,
+                perfil TEXT NOT NULL DEFAULT 'RH',
+                nome_completo TEXT
+            );
             """
         )
+    _seed_admin_padrao()
+
+
+def _seed_admin_padrao():
+    """Cria um usuário admin padrão na primeira execução, caso não exista nenhum usuário."""
+    if not listar_usuarios():
+        criar_usuario("admin", "admin123", perfil="Administrador", nome_completo="Administrador")
 
 
 # ---------- FUNCIONÁRIOS ----------
@@ -155,3 +173,64 @@ def status_entrega(data_validade_str: str, devolvido: int, dias_alerta=15):
     if (validade - hoje).days <= dias_alerta:
         return "Próximo do vencimento"
     return "Válido"
+
+
+# ---------- AUTENTICAÇÃO DE USUÁRIOS ----------
+# Observação: para um sistema real em produção, o ideal é usar uma biblioteca
+# especializada como `passlib` ou `bcrypt`. Aqui usamos hashlib + salt (PBKDF2)
+# para manter o projeto sem dependências externas além do Streamlit.
+
+def _hash_password(password: str, salt: str) -> str:
+    return hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000
+    ).hex()
+
+
+def criar_usuario(username, password, perfil="RH", nome_completo=""):
+    """Cria um novo usuário. Lança ValueError se o username já existir."""
+    salt = secrets.token_hex(16)
+    password_hash = _hash_password(password, salt)
+    try:
+        with get_conn() as conn:
+            conn.execute(
+                """INSERT INTO usuarios (username, password_hash, salt, perfil, nome_completo)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (username.strip().lower(), password_hash, salt, perfil, nome_completo),
+            )
+    except sqlite3.IntegrityError:
+        raise ValueError(f"Já existe um usuário com o username '{username}'.")
+
+
+def listar_usuarios():
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, username, perfil, nome_completo FROM usuarios ORDER BY username"
+        ).fetchall()
+
+
+def excluir_usuario(usuario_id):
+    with get_conn() as conn:
+        conn.execute("DELETE FROM usuarios WHERE id = ?", (usuario_id,))
+
+
+def verificar_login(username, password):
+    """Retorna a linha do usuário se username/senha forem válidos, senão None."""
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM usuarios WHERE username = ?", (username.strip().lower(),)
+        ).fetchone()
+    if row is None:
+        return None
+    if _hash_password(password, row["salt"]) == row["password_hash"]:
+        return row
+    return None
+
+
+def alterar_senha(usuario_id, nova_senha):
+    salt = secrets.token_hex(16)
+    password_hash = _hash_password(nova_senha, salt)
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE usuarios SET password_hash = ?, salt = ? WHERE id = ?",
+            (password_hash, salt, usuario_id),
+        )

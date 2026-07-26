@@ -25,13 +25,62 @@ STATUS_COLOR = {
     "Devolvido": "⚪",
 }
 
+
+# ---------------------------------------------------------------------------
+# AUTENTICAÇÃO
+# ---------------------------------------------------------------------------
+def tela_login():
+    st.title("🦺 Sistema de Controle de EPI")
+    st.subheader("🔐 Login")
+
+    st.info(
+        "Primeiro acesso? Use o usuário padrão **admin** / senha **admin123** "
+        "e depois crie os usuários da sua equipe em '🔑 Usuários'."
+    )
+
+    with st.form("form_login"):
+        username = st.text_input("Usuário")
+        password = st.text_input("Senha", type="password")
+        entrar = st.form_submit_button("Entrar")
+
+    if entrar:
+        usuario = db.verificar_login(username, password)
+        if usuario:
+            st.session_state["usuario"] = {
+                "id": usuario["id"],
+                "username": usuario["username"],
+                "perfil": usuario["perfil"],
+                "nome_completo": usuario["nome_completo"],
+            }
+            st.rerun()
+        else:
+            st.error("Usuário ou senha inválidos.")
+
+
+if "usuario" not in st.session_state:
+    tela_login()
+    st.stop()
+
+usuario_logado = st.session_state["usuario"]
+
+# ---------------------------------------------------------------------------
+# APP PRINCIPAL (usuário autenticado)
+# ---------------------------------------------------------------------------
 st.title("🦺 Sistema de Controle de EPI")
 st.caption("Controle de entrega, validade e devolução de Equipamentos de Proteção Individual")
 
-menu = st.sidebar.radio(
-    "Menu",
-    ["📊 Dashboard", "👷 Funcionários", "🧰 Tipos de EPI", "📦 Registrar Entrega", "📋 Entregas"],
-)
+st.sidebar.success(f"👤 {usuario_logado['nome_completo'] or usuario_logado['username']}")
+st.sidebar.caption(f"Perfil: {usuario_logado['perfil']}")
+if st.sidebar.button("Sair"):
+    del st.session_state["usuario"]
+    st.rerun()
+st.sidebar.divider()
+
+opcoes_menu = ["📊 Dashboard", "👷 Funcionários", "🧰 Tipos de EPI", "📦 Registrar Entrega", "📋 Entregas"]
+if usuario_logado["perfil"] == "Administrador":
+    opcoes_menu.append("🔑 Usuários")
+
+menu = st.sidebar.radio("Menu", opcoes_menu)
 
 # ---------------------------------------------------------------------------
 # DASHBOARD
@@ -175,3 +224,42 @@ elif menu == "📋 Entregas":
                         st.rerun()
                 else:
                     col5.write(f"✅ {e['data_devolucao']}")
+
+# ---------------------------------------------------------------------------
+# USUÁRIOS (apenas Administrador)
+# ---------------------------------------------------------------------------
+elif menu == "🔑 Usuários":
+    st.subheader("Criar novo usuário")
+    with st.form("form_usuario", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        novo_username = col1.text_input("Usuário (login)")
+        nova_senha = col2.text_input("Senha", type="password")
+        col3, col4 = st.columns(2)
+        nome_completo = col3.text_input("Nome completo")
+        perfil = col4.selectbox("Perfil", ["RH", "Segurança do Trabalho", "Administrador"])
+        submitted = st.form_submit_button("Criar usuário")
+        if submitted:
+            if not novo_username.strip() or not nova_senha:
+                st.error("Usuário e senha são obrigatórios.")
+            elif len(nova_senha) < 6:
+                st.error("A senha deve ter pelo menos 6 caracteres.")
+            else:
+                try:
+                    db.criar_usuario(novo_username, nova_senha, perfil=perfil, nome_completo=nome_completo)
+                    st.success(f"Usuário '{novo_username}' criado com sucesso!")
+                except ValueError as e:
+                    st.error(str(e))
+
+    st.subheader("Usuários cadastrados")
+    usuarios = db.listar_usuarios()
+    for u in usuarios:
+        with st.container(border=True):
+            col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+            col1.write(f"**{u['nome_completo'] or u['username']}**  \n@{u['username']}")
+            col2.write(f"Perfil: {u['perfil']}")
+            eh_o_proprio = u["id"] == usuario_logado["id"]
+            if col4.button("Excluir", key=f"del_user_{u['id']}", disabled=eh_o_proprio):
+                db.excluir_usuario(u["id"])
+                st.rerun()
+            if eh_o_proprio:
+                col3.caption("(você)")

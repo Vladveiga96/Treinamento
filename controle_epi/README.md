@@ -6,6 +6,7 @@ industrial/siderúrgica (capacete, luva, protetor auricular, botina, óculos, et
 
 ## Funcionalidades
 
+- **Login de usuários** com perfis (RH, Segurança do Trabalho, Administrador)
 - Cadastro de funcionários (nome, cargo, setor)
 - Cadastro de tipos de EPI com prazo de validade em dias
 - Registro de entrega de EPI a um funcionário (a validade é calculada automaticamente)
@@ -16,6 +17,17 @@ industrial/siderúrgica (capacete, luva, protetor auricular, botina, óculos, et
   - ⚪ **Devolvido**
 - Registro de devolução/troca de EPI
 - Dashboard com métricas gerais e alertas de EPIs vencidos
+- Gerenciamento de usuários (criar/excluir) restrito a quem tem perfil Administrador
+
+### Login
+
+Na primeira execução, o sistema cria automaticamente um usuário administrador padrão:
+
+- **Usuário:** `admin`
+- **Senha:** `admin123`
+
+⚠️ **Troque essa senha** (ou crie um novo admin e exclua o padrão) assim que possível — ela é só um ponto de partida.
+As senhas são armazenadas com hash PBKDF2 + salt (nunca em texto puro). Para um ambiente de produção real, recomenda-se usar uma biblioteca dedicada como `passlib` ou `bcrypt`.
 
 ## Tecnologias
 
@@ -52,7 +64,6 @@ O navegador abrirá automaticamente em `http://localhost:8501`.
 
 ## Possíveis evoluções (ideias para continuar o projeto)
 
-- Autenticação de usuários (login para RH/segurança do trabalho)
 - Exportação de relatórios em PDF ou Excel
 - Envio de e-mail/WhatsApp automático quando um EPI estiver próximo do vencimento
 - Leitura de EPI por código de barras/QR Code (entrega mais rápida)
