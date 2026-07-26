@@ -52,7 +52,7 @@ O navegador abrirá automaticamente em `http://localhost:8501`.
 
 ## Possíveis evoluções (ideias para continuar o projeto)
 
-- Autenticação de usuários (login para RH/segurança do trabalho)
+- Autenticação de usuários (login para RH/segurança do trabalho) - Feita
 - Exportação de relatórios em PDF ou Excel
 - Envio de e-mail/WhatsApp automático quando um EPI estiver próximo do vencimento
 - Leitura de EPI por código de barras/QR Code (entrega mais rápida)
