@@ -13,6 +13,13 @@ from contextlib import contextmanager
 DB_PATH = "epi_control.db"
 
 
+def _to_dicts(rows):
+    """Converte uma lista de sqlite3.Row em dicts comuns.
+    Necessário porque o Streamlit tenta copiar (deepcopy) os objetos usados em
+    widgets como selectbox, e sqlite3.Row não suporta isso."""
+    return [dict(r) for r in rows]
+
+
 @contextmanager
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
@@ -86,7 +93,7 @@ def add_funcionario(nome, cargo, setor):
 
 def get_funcionarios():
     with get_conn() as conn:
-        return conn.execute("SELECT * FROM funcionarios ORDER BY nome").fetchall()
+        return _to_dicts(conn.execute("SELECT * FROM funcionarios ORDER BY nome").fetchall())
 
 
 def delete_funcionario(funcionario_id):
@@ -106,7 +113,7 @@ def add_tipo_epi(nome, validade_dias):
 
 def get_tipos_epi():
     with get_conn() as conn:
-        return conn.execute("SELECT * FROM tipos_epi ORDER BY nome").fetchall()
+        return _to_dicts(conn.execute("SELECT * FROM tipos_epi ORDER BY nome").fetchall())
 
 
 def delete_tipo_epi(epi_id):
@@ -151,7 +158,7 @@ def get_entregas(apenas_ativas=False):
     query += " ORDER BY e.data_validade ASC"
 
     with get_conn() as conn:
-        return conn.execute(query).fetchall()
+        return _to_dicts(conn.execute(query).fetchall())
 
 
 def devolver_entrega(entrega_id, data_devolucao: date):
@@ -203,9 +210,9 @@ def criar_usuario(username, password, perfil="RH", nome_completo=""):
 
 def listar_usuarios():
     with get_conn() as conn:
-        return conn.execute(
+        return _to_dicts(conn.execute(
             "SELECT id, username, perfil, nome_completo FROM usuarios ORDER BY username"
-        ).fetchall()
+        ).fetchall())
 
 
 def excluir_usuario(usuario_id):

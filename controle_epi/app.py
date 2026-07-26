@@ -13,6 +13,7 @@ import streamlit as st
 from datetime import date
 
 import database as db
+import relatorios
 
 st.set_page_config(page_title="Controle de EPI", page_icon="🦺", layout="wide")
 
@@ -76,7 +77,7 @@ if st.sidebar.button("Sair"):
     st.rerun()
 st.sidebar.divider()
 
-opcoes_menu = ["📊 Dashboard", "👷 Funcionários", "🧰 Tipos de EPI", "📦 Registrar Entrega", "📋 Entregas"]
+opcoes_menu = ["📊 Dashboard", "👷 Funcionários", "🧰 Tipos de EPI", "📦 Registrar Entrega", "📋 Entregas", "📄 Relatórios"]
 if usuario_logado["perfil"] == "Administrador":
     opcoes_menu.append("🔑 Usuários")
 
@@ -224,6 +225,69 @@ elif menu == "📋 Entregas":
                         st.rerun()
                 else:
                     col5.write(f"✅ {e['data_devolucao']}")
+
+# ---------------------------------------------------------------------------
+# RELATÓRIOS
+# ---------------------------------------------------------------------------
+elif menu == "📄 Relatórios":
+    st.subheader("Exportar relatório de entregas")
+
+    filtro = st.radio(
+        "O que incluir no relatório?",
+        ["Todas as entregas", "Somente ativas (não devolvidas)", "Somente vencidas"],
+        horizontal=True,
+    )
+
+    if filtro == "Todas as entregas":
+        entregas_relatorio = db.get_entregas()
+    elif filtro == "Somente ativas (não devolvidas)":
+        entregas_relatorio = db.get_entregas(apenas_ativas=True)
+    else:
+        todas = db.get_entregas()
+        entregas_relatorio = [
+            e for e in todas if db.status_entrega(e["data_validade"], e["devolvido"]) == "Vencido"
+        ]
+
+    st.write(f"**{len(entregas_relatorio)}** entrega(s) serão incluídas no relatório.")
+
+    if entregas_relatorio:
+        st.dataframe(
+            [
+                {
+                    "Funcionário": e["funcionario"],
+                    "Setor": e["setor"],
+                    "EPI": e["epi"],
+                    "Entrega": e["data_entrega"],
+                    "Validade": e["data_validade"],
+                    "Status": db.status_entrega(e["data_validade"], e["devolvido"]),
+                }
+                for e in entregas_relatorio
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+
+        col1, col2 = st.columns(2)
+
+        excel_bytes = relatorios.gerar_excel(entregas_relatorio)
+        col1.download_button(
+            "⬇️ Baixar em Excel (.xlsx)",
+            data=excel_bytes,
+            file_name=f"relatorio_epi_{date.today().isoformat()}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
+
+        pdf_bytes = relatorios.gerar_pdf(entregas_relatorio)
+        col2.download_button(
+            "⬇️ Baixar em PDF",
+            data=pdf_bytes,
+            file_name=f"relatorio_epi_{date.today().isoformat()}.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+    else:
+        st.info("Nenhuma entrega encontrada para esse filtro.")
 
 # ---------------------------------------------------------------------------
 # USUÁRIOS (apenas Administrador)

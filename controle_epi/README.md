@@ -18,6 +18,7 @@ industrial/siderúrgica (capacete, luva, protetor auricular, botina, óculos, et
 - Registro de devolução/troca de EPI
 - Dashboard com métricas gerais e alertas de EPIs vencidos
 - Gerenciamento de usuários (criar/excluir) restrito a quem tem perfil Administrador
+- **Exportação de relatórios em Excel (.xlsx) e PDF**, com filtro por status (todas / ativas / vencidas)
 
 ### Login
 
@@ -41,6 +42,7 @@ As senhas são armazenadas com hash PBKDF2 + salt (nunca em texto puro). Para um
 controle_epi/
 ├── app.py            # Interface Streamlit (telas e navegação)
 ├── database.py        # Camada de acesso a dados (SQLite)
+├── relatorios.py       # Geração de relatórios em Excel e PDF
 ├── requirements.txt    # Dependências
 ├── epi_control.db      # Banco de dados (criado automaticamente na 1ª execução)
 └── README.md
@@ -64,7 +66,6 @@ O navegador abrirá automaticamente em `http://localhost:8501`.
 
 ## Possíveis evoluções (ideias para continuar o projeto)
 
-- Exportação de relatórios em PDF ou Excel
 - Envio de e-mail/WhatsApp automático quando um EPI estiver próximo do vencimento
 - Leitura de EPI por código de barras/QR Code (entrega mais rápida)
 - Deploy em nuvem (Streamlit Community Cloud, Render, etc.) para acesso remoto
